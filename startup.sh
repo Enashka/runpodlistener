@@ -44,12 +44,7 @@ else
   echo "Found credentials.json file."
 fi
 
-# Set up Python environment
-echo "Setting up Python environment..."
-python -m venv venv
-source venv/bin/activate
-
-# Install dependencies
+# Install dependencies using the existing Python environment
 echo "Installing dependencies..."
 pip install -r requirements.txt
 

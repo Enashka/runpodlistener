@@ -23,6 +23,8 @@ This application monitors the output directory of ComfyUI on RunPod and automati
 
 ## Installation on RunPod
 
+This tool uses the existing Python environment from ComfyUI, so there's no need to set up a separate environment.
+
 ### Option 1: One-Line Installation (Easiest)
 
 Run this single command on your RunPod instance:
@@ -72,10 +74,8 @@ wget -O - https://raw.githubusercontent.com/Enashka/runpodlistener/main/direct_i
    Edit the `.env` file with your specific settings:
    - `GOOGLE_DRIVE_FOLDER_ID`: The ID of the Google Drive folder where you want to store the images
 
-5. Set up Python environment:
+5. Install dependencies:
    ```bash
-   python -m venv venv
-   source venv/bin/activate
    pip install -r requirements.txt
    ```
 
@@ -98,9 +98,7 @@ cd runpodlistener
 cp .env.example .env
 sed -i "s|GOOGLE_DRIVE_FOLDER_ID=your_google_drive_folder_id|GOOGLE_DRIVE_FOLDER_ID=YOUR_FOLDER_ID|" .env
 
-# Set up environment
-python -m venv venv
-source venv/bin/activate
+# Install dependencies
 pip install -r requirements.txt
 
 # Start in background

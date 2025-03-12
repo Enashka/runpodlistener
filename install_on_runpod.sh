@@ -36,12 +36,7 @@ echo "Creating .env file..."
 cp .env.example .env
 sed -i "s|GOOGLE_DRIVE_FOLDER_ID=your_google_drive_folder_id|GOOGLE_DRIVE_FOLDER_ID=$GOOGLE_DRIVE_FOLDER_ID|" .env
 
-# Set up Python environment
-echo "Setting up Python environment..."
-python -m venv venv
-source venv/bin/activate
-
-# Install dependencies
+# Install dependencies using the existing Python environment
 echo "Installing dependencies..."
 pip install -r requirements.txt
 
@@ -81,7 +76,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=$INSTALL_DIR
-ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/src/main.py
+ExecStart=/usr/bin/python $INSTALL_DIR/src/main.py
 Restart=on-failure
 Environment=PYTHONUNBUFFERED=1
 
@@ -104,7 +99,7 @@ echo ""
 if [ ! -f "$TOKEN_FILE" ]; then
   echo "Note: You need to authenticate with Google Drive the first time."
   echo "Run the following command to authenticate:"
-  echo "  cd $INSTALL_DIR && source venv/bin/activate && python src/main.py --once"
+  echo "  cd $INSTALL_DIR && python src/main.py --once"
   echo ""
   echo "After authentication, the token will be saved to your persistent storage"
   echo "and will be available for future RunPod sessions."
