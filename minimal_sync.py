@@ -9,6 +9,7 @@ import time
 import glob
 import logging
 import yaml
+import datetime
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
@@ -103,62 +104,111 @@ def authenticate(folder_id):
         logger.error(f"Authentication error: {e}")
         raise
 
-def sync_files(drive, folder_id):
-    """Sync files from ComfyUI output directory to Google Drive."""
-    try:
-        output_dir = CONFIG["output_directory"]
-        file_extensions = CONFIG["file_extensions"]
+class SyncManager:
+    def __init__(self, drive, folder_id):
+        self.drive = drive
+        self.folder_id = folder_id
+        self.output_dir = CONFIG["output_directory"]
+        self.sync_interval = CONFIG["sync_interval"]
+        self.file_extensions = CONFIG["file_extensions"]
+        
+        # Record the start time to only process files created after this time
+        self.start_time = datetime.datetime.now()
+        logger.info(f"Starting sync manager at {self.start_time}")
         
         # Check if output directory exists
-        if not os.path.exists(output_dir):
-            logger.error(f"Output directory {output_dir} does not exist")
-            return 0
-        
-        logger.info(f"Checking for files in {output_dir}")
+        if os.path.exists(self.output_dir):
+            logger.info(f"Monitoring directory: {self.output_dir}")
+        else:
+            logger.warning(f"Output directory {self.output_dir} not found")
+    
+    def is_new_file(self, file_path):
+        """Check if a file was created after the tool started running."""
+        try:
+            # Get file creation time
+            file_ctime = os.path.getctime(file_path)
+            file_time = datetime.datetime.fromtimestamp(file_ctime)
+            
+            # Check if file was created after the tool started
+            return file_time > self.start_time
+        except Exception as e:
+            logger.error(f"Error checking file time: {e}")
+            # If we can't determine, assume it's not new
+            return False
+    
+    def get_new_files(self):
+        """Get files created after the tool started running."""
+        if not os.path.exists(self.output_dir):
+            logger.error(f"Output directory {self.output_dir} does not exist")
+            return []
         
         # Find all files with the specified extensions
         all_files = []
-        for ext in file_extensions:
-            pattern = os.path.join(output_dir, f"*{ext}")
+        for ext in self.file_extensions:
+            pattern = os.path.join(self.output_dir, f"*{ext}")
             all_files.extend(glob.glob(pattern))
         
-        logger.info(f"Found {len(all_files)} files with supported extensions")
+        # Filter for new files only
+        new_files = [f for f in all_files if self.is_new_file(f)]
         
-        # Upload files
-        uploaded_count = 0
-        for file_path in all_files:
+        if new_files:
+            logger.info(f"Found {len(new_files)} new files to sync")
+        
+        return new_files
+    
+    def upload_file(self, file_path):
+        """Upload a file to Google Drive."""
+        try:
             file_name = os.path.basename(file_path)
             
-            # Check if file already exists in Drive
-            query = f"'{folder_id}' in parents and title='{file_name}' and trashed=false"
-            file_list = drive.ListFile({'q': query}).GetList()
-            
-            if len(file_list) > 0:
-                logger.info(f"File {file_name} already exists in Google Drive, skipping")
-                continue
-            
             # Upload file
-            try:
-                logger.info(f"Uploading {file_name} to Google Drive")
-                file_metadata = {
-                    'title': file_name,
-                    'parents': [{'id': folder_id}]
-                }
-                
-                file = drive.CreateFile(file_metadata)
-                file.SetContentFile(file_path)
-                file.Upload()
-                
-                logger.info(f"Successfully uploaded {file_name}")
-                uploaded_count += 1
-            except Exception as e:
-                logger.error(f"Failed to upload {file_name}: {e}")
+            logger.info(f"Uploading {file_name} to Google Drive")
+            file_metadata = {
+                'title': file_name,
+                'parents': [{'id': self.folder_id}]
+            }
+            
+            file = self.drive.CreateFile(file_metadata)
+            file.SetContentFile(file_path)
+            file.Upload()
+            
+            logger.info(f"Successfully uploaded {file_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to upload {file_name}: {e}")
+            return False
+    
+    def sync_files(self):
+        """Sync new files to Google Drive."""
+        logger.info("Checking for new files")
         
-        logger.info(f"Uploaded {uploaded_count} files")
+        new_files = self.get_new_files()
+        
+        uploaded_count = 0
+        for file_path in new_files:
+            if self.upload_file(file_path):
+                uploaded_count += 1
+        
+        if uploaded_count > 0:
+            logger.info(f"Uploaded {uploaded_count} new files")
+        
         return uploaded_count
-    except Exception as e:
-        logger.error(f"Sync error: {e}")
-        return 0
+    
+    def run(self):
+        """Run the sync manager continuously."""
+        logger.info("Starting sync manager")
+        
+        try:
+            while True:
+                try:
+                    self.sync_files()
+                except Exception as e:
+                    logger.error(f"Error during sync: {e}")
+                
+                logger.info(f"Sleeping for {self.sync_interval} seconds")
+                time.sleep(self.sync_interval)
+        except KeyboardInterrupt:
+            logger.info("Sync manager stopped by user")
 
 def main():
     # Get folder ID from config or command line
@@ -186,19 +236,15 @@ def main():
         # Authenticate
         drive = authenticate(folder_id)
         
+        # Create sync manager
+        sync_manager = SyncManager(drive, folder_id)
+        
         if run_once:
             # Run once
-            sync_files(drive, folder_id)
+            sync_manager.sync_files()
         else:
             # Run continuously
-            while True:
-                try:
-                    sync_files(drive, folder_id)
-                except Exception as e:
-                    logger.error(f"Error during sync: {e}")
-                
-                logger.info(f"Sleeping for {sync_interval} seconds")
-                time.sleep(sync_interval)
+            sync_manager.run()
     except Exception as e:
         logger.error(f"Error: {e}")
         return 1
