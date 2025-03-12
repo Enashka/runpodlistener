@@ -116,6 +116,9 @@ class SyncManager:
         self.start_time = datetime.datetime.now()
         logger.info(f"Starting sync manager at {self.start_time}")
         
+        # Keep track of uploaded files to prevent re-uploading
+        self.uploaded_files = set()
+        
         # Check if output directory exists
         if os.path.exists(self.output_dir):
             logger.info(f"Monitoring directory: {self.output_dir}")
@@ -148,8 +151,8 @@ class SyncManager:
             pattern = os.path.join(self.output_dir, f"*{ext}")
             all_files.extend(glob.glob(pattern))
         
-        # Filter for new files only
-        new_files = [f for f in all_files if self.is_new_file(f)]
+        # Filter for new files only and exclude already uploaded files
+        new_files = [f for f in all_files if self.is_new_file(f) and f not in self.uploaded_files]
         
         if new_files:
             logger.info(f"Found {len(new_files)} new files to sync")
@@ -172,6 +175,9 @@ class SyncManager:
             file.SetContentFile(file_path)
             file.Upload()
             
+            # Add to uploaded files set to prevent re-uploading
+            self.uploaded_files.add(file_path)
+            
             logger.info(f"Successfully uploaded {file_name}")
             return True
         except Exception as e:
@@ -191,6 +197,8 @@ class SyncManager:
         
         if uploaded_count > 0:
             logger.info(f"Uploaded {uploaded_count} new files")
+        else:
+            logger.info("No new files to upload")
         
         return uploaded_count
     
