@@ -29,6 +29,7 @@ CONFIG_FILE = os.path.join(os.getcwd(), "config.yaml")
 def load_config():
     """Load configuration from config.yaml file."""
     default_config = {
+        "folder_id": "",
         "sync_interval": 60,
         "output_directory": "/workspace/ComfyUI/output",
         "file_extensions": [".png", ".jpg", ".jpeg"]
@@ -160,12 +161,19 @@ def sync_files(drive, folder_id):
         return 0
 
 def main():
-    # Check command line arguments
-    if len(sys.argv) < 2:
-        logger.error("Usage: python minimal_sync.py <folder_id> [--once]")
+    # Get folder ID from config or command line
+    folder_id = CONFIG["folder_id"]
+    
+    # Override with command line argument if provided
+    if len(sys.argv) > 1 and not sys.argv[1].startswith('--'):
+        folder_id = sys.argv[1]
+        logger.info(f"Using folder ID from command line: {folder_id}")
+    
+    # Check if folder ID is set
+    if not folder_id:
+        logger.error("Google Drive folder ID not set. Please set it in config.yaml or provide it as a command line argument.")
         return 1
     
-    folder_id = sys.argv[1]
     run_once = "--once" in sys.argv
     
     # Get sync interval from config

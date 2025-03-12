@@ -1,6 +1,9 @@
 # ComfyUI Image Sync Configuration
 # Updated by Enashka
 
+# Google Drive folder ID where images will be uploaded
+folder_id: "YOUR_FOLDER_ID"
+
 # Sync interval in seconds
 sync_interval: 5
 
