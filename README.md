@@ -27,27 +27,37 @@ For a simplified setup process, you can use our setup script:
 
 1. Connect to your RunPod instance via SSH or the web terminal
 
-2. Download and run the setup script:
+2. If you're updating from a previous version or restarting, first stop any existing sync service:
+   ```bash
+   pkill -f minimal_sync.py
+   ```
+
+3. Download and run the setup script:
    ```bash
    curl -O https://raw.githubusercontent.com/Enashka/runpodlistener/main/setup_sync.sh
    chmod +x setup_sync.sh
    ./setup_sync.sh
    ```
 
-3. Follow the prompts if needed:
+4. Follow the prompts if needed:
    - Enter your Google Drive folder ID when asked (only on first setup)
    - Upload your credentials.json file when prompted (only if not already present)
    - Complete the Google authentication process (only on first authentication)
 
    > **Important**: When downloading credentials from Google Cloud Console, the file might be named something like "client_secret_XXXX.json". Make sure to rename it to exactly "credentials.json" before uploading.
 
-The script will automatically:
+5. Start the sync service:
+   ```bash
+   ./start.sh
+   ```
+
+The setup script will:
 - Check if files already exist in persistent storage
 - Download only missing files
 - Install dependencies
 - Use existing configuration if available
 - Guide you through authentication if needed
-- Start the sync service
+- Provide instructions for starting the service
 
 **Note**: Since RunPod's `/workspace` directory is persistent, your configuration and authentication will be preserved between pod restarts. When you restart your pod, simply run the setup script again, and it will detect your existing configuration.
 
@@ -122,13 +132,24 @@ If you prefer to install manually, follow these steps:
 When you restart your RunPod instance, your configuration will be preserved in the persistent `/workspace` directory. To restart the sync service:
 
 1. Connect to your RunPod instance via SSH or the web terminal
-2. Run the setup script again:
+
+2. Stop any existing sync service:
+   ```bash
+   pkill -f minimal_sync.py
+   ```
+
+3. Run the setup script:
    ```bash
    cd /workspace/runpodlistener
    ./setup_sync.sh
    ```
 
-The script will detect your existing configuration and authentication, and will only restart the sync service.
+4. Start the sync service:
+   ```bash
+   ./start.sh
+   ```
+
+The script will detect your existing configuration and authentication, and ensure everything is set up correctly before you start the service.
 
 ## Configuration
 
@@ -169,6 +190,12 @@ tail -f sync.log
 To stop the service:
 ```bash
 pkill -f minimal_sync.py
+```
+
+To restart the service:
+```bash
+pkill -f minimal_sync.py
+./start.sh
 ```
 
 ## Getting Your Google Drive Folder ID
