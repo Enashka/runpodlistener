@@ -28,9 +28,13 @@ pip install pydrive2 python-dotenv pyyaml
 
 # Check if folder ID is already configured
 FOLDER_ID_CONFIGURED=false
-if grep -q "folder_id: \"[^Y][^O][^U][^R]" config.yaml; then
-    FOLDER_ID_CONFIGURED=true
-    echo "Google Drive folder ID already configured in config.yaml."
+# Check if folder_id in config.yaml is not the default "YOUR_FOLDER_ID"
+if grep -q "folder_id:" config.yaml; then
+    FOLDER_ID=$(grep "folder_id:" config.yaml | cut -d '"' -f 2)
+    if [ "$FOLDER_ID" != "YOUR_FOLDER_ID" ] && [ ! -z "$FOLDER_ID" ]; then
+        FOLDER_ID_CONFIGURED=true
+        echo "Google Drive folder ID already configured in config.yaml: $FOLDER_ID"
+    fi
 fi
 
 # Prompt for Google Drive folder ID if not configured
@@ -40,7 +44,7 @@ if [ "$FOLDER_ID_CONFIGURED" = false ]; then
     
     # Update folder ID in config.yaml
     echo "Updating folder ID in config.yaml..."
-    sed -i "s/YOUR_FOLDER_ID/$FOLDER_ID/" config.yaml
+    sed -i "s/folder_id: \".*\"/folder_id: \"$FOLDER_ID\"/" config.yaml
 fi
 
 # Check if credentials.json exists
