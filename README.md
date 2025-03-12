@@ -13,99 +13,120 @@ This application monitors the output directory of ComfyUI on RunPod and automati
 - Configurable sync intervals
 - Authentication with Google Drive API
 - Logging and error handling
+- Works with ephemeral RunPod instances
 
 ## Requirements
 
-- Python 3.8+
 - RunPod account with ComfyUI setup
 - Google Drive account
 - Google Cloud Platform account (for API access)
 
-## Setup
+## Installation on RunPod
 
-### 1. Clone this repository
+### Option 1: Quick Installation (Recommended)
 
-```bash
-git clone https://github.com/yourusername/runpodlistener.git
-cd runpodlistener
-```
+1. SSH into your RunPod instance
+2. Download the installation script:
+   ```bash
+   wget https://raw.githubusercontent.com/yourusername/runpodlistener/master/install_on_runpod.sh
+   ```
+3. Make it executable:
+   ```bash
+   chmod +x install_on_runpod.sh
+   ```
+4. Run the installation script:
+   ```bash
+   sudo ./install_on_runpod.sh
+   ```
+5. Follow the prompts to complete the installation
 
-### 2. Set up Google Drive API
+### Option 2: Manual Installation
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project
-3. Enable the Google Drive API
-   - Go to "APIs & Services" > "Library"
-   - Search for "Google Drive API" and enable it
-4. Create OAuth credentials
-   - Go to "APIs & Services" > "Credentials"
-   - Click "Create Credentials" > "OAuth client ID"
-   - Select "Desktop app" as the application type
-   - Name your client and click "Create"
-5. Download the credentials JSON file
-6. Rename it to `credentials.json` and place it in the project directory
+1. SSH into your RunPod instance
+2. Clone this repository:
+   ```bash
+   cd /workspace
+   git clone https://github.com/yourusername/runpodlistener.git
+   cd runpodlistener
+   ```
+3. Set up Google Drive API:
+   - Go to the [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project
+   - Enable the Google Drive API
+   - Create OAuth credentials (Desktop app)
+   - Download the credentials JSON file
+   - Upload it to your RunPod instance as `credentials.json`
 
-### 3. Configure the application
-
-1. Copy the example environment file:
+4. Configure the application:
    ```bash
    cp .env.example .env
    ```
-
-2. Edit the `.env` file with your specific settings:
-   - `RUNPOD_API_KEY`: Your RunPod API key (found in your RunPod account settings)
-   - `RUNPOD_POD_ID`: The ID of your RunPod pod running ComfyUI
+   Edit the `.env` file with your specific settings:
    - `GOOGLE_DRIVE_FOLDER_ID`: The ID of the Google Drive folder where you want to store the images
-     - You can find this in the URL when you open the folder in Google Drive: `https://drive.google.com/drive/folders/YOUR_FOLDER_ID`
 
-### 4. Install dependencies
+5. Set up Python environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+6. Run the application:
+   ```bash
+   python src/main.py
+   ```
+
+## Adding to RunPod Template
+
+If you want to automatically start the sync tool whenever you create a new RunPod instance, you can add the following to your RunPod template's startup script:
 
 ```bash
+# Clone and set up the sync tool
+cd /workspace
+git clone https://github.com/yourusername/runpodlistener.git
+cd runpodlistener
+
+# Configure
+cp .env.example .env
+sed -i "s|GOOGLE_DRIVE_FOLDER_ID=your_google_drive_folder_id|GOOGLE_DRIVE_FOLDER_ID=YOUR_FOLDER_ID|" .env
+
+# Set up environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
+
+# Start in background
+nohup python src/main.py > sync.log 2>&1 &
 ```
 
-## Usage
-
-### Running locally
-
-To run the sync application locally:
-
-```bash
-python src/main.py
-```
-
-Options:
-- `--once`: Run the sync once and exit
-- `--config`: Path to a custom .env file
-
-### Running on RunPod
-
-To run the application on RunPod:
-
-1. Upload the entire project to your RunPod pod
-2. SSH into your RunPod pod
-3. Navigate to the project directory
-4. Make the run script executable:
-   ```bash
-   chmod +x run_on_runpod.sh
-   ```
-5. Run the script:
-   ```bash
-   ./run_on_runpod.sh
-   ```
+Replace `YOUR_FOLDER_ID` with your actual Google Drive folder ID.
 
 ## First Run Authentication
 
-The first time you run the application, it will open a browser window asking you to authenticate with Google. Follow these steps:
+The first time you run the application, you'll need to authenticate with Google:
 
-1. Sign in to your Google account
-2. Grant the requested permissions
-3. Copy the authorization code
-4. Paste it into the terminal when prompted
+1. Run the application with the `--once` flag:
+   ```bash
+   python src/main.py --once
+   ```
+2. You'll see a URL in the console. Copy this URL.
+3. Open the URL in a browser on your local machine (not on RunPod)
+4. Sign in to your Google account and grant the requested permissions
+5. Copy the authorization code
+6. Paste it into the RunPod terminal when prompted
 
 After the first authentication, a token file will be created and stored for future use.
+
+## Configuration Options
+
+You can configure the application by editing the `.env` file:
+
+- `COMFYUI_OUTPUT_DIR`: Path to the ComfyUI output directory
+- `GOOGLE_DRIVE_FOLDER_ID`: ID of the Google Drive folder to upload to
+- `SYNC_INTERVAL`: How often to check for new files (in seconds)
+- `FILE_EXTENSIONS`: File extensions to sync (comma-separated)
+- `LOG_LEVEL`: Logging level (INFO, DEBUG, etc.)
+- `LOG_FILE`: Path to the log file
 
 ## Troubleshooting
 
@@ -116,12 +137,12 @@ If you encounter authentication issues:
 2. Ensure your `credentials.json` file is correct
 3. Run the application again to re-authenticate
 
-### RunPod API Issues
+### File Syncing Issues
 
-If you encounter issues with the RunPod API:
-1. Verify your API key is correct
-2. Ensure your Pod ID is correct
-3. Check that your pod is running
+If files aren't being synced:
+1. Check that the ComfyUI output directory is correct
+2. Verify that your Google Drive folder ID is correct
+3. Check the log file for errors
 
 ## License
 

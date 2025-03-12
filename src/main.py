@@ -30,6 +30,11 @@ def parse_args():
         type=str,
         help="Path to a custom .env file"
     )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        help="Override the ComfyUI output directory"
+    )
     return parser.parse_args()
 
 def main():
@@ -40,6 +45,10 @@ def main():
     if args.config and os.path.exists(args.config):
         from dotenv import load_dotenv
         load_dotenv(args.config)
+    
+    # Override output directory if provided
+    if args.output_dir:
+        os.environ["COMFYUI_OUTPUT_DIR"] = args.output_dir
     
     # Set up logging
     setup_logging()

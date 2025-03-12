@@ -2,12 +2,13 @@ import os
 import time
 import logging
 import tempfile
+import glob
+import shutil
 from typing import List, Set
 from datetime import datetime
 
 from src.config import COMFYUI_OUTPUT_DIR, SYNC_INTERVAL, FILE_EXTENSIONS
 from src.utils.google_drive import GoogleDriveClient
-from src.utils.runpod_api import RunPodClient
 
 logger = logging.getLogger(__name__)
 
@@ -15,16 +16,22 @@ class SyncManager:
     """Manager for synchronizing files from RunPod to Google Drive."""
     
     def __init__(self):
-        self.runpod_client = RunPodClient()
         self.drive_client = GoogleDriveClient()
         self.output_dir = COMFYUI_OUTPUT_DIR
         self.sync_interval = SYNC_INTERVAL
         self.file_extensions = FILE_EXTENSIONS
         self.synced_files: Set[str] = set()
         
-        # Create a temporary directory for downloaded files
+        # Create a temporary directory for processing files
         self.temp_dir = tempfile.mkdtemp(prefix="runpod_sync_")
         logger.info(f"Created temporary directory: {self.temp_dir}")
+        
+        # Check if we're running directly on RunPod
+        self.running_on_runpod = os.path.exists(self.output_dir)
+        if self.running_on_runpod:
+            logger.info(f"Running directly on RunPod, monitoring directory: {self.output_dir}")
+        else:
+            logger.warning(f"Not running on RunPod or output directory {self.output_dir} not found")
     
     def _is_valid_file(self, file_path: str) -> bool:
         """
@@ -47,14 +54,21 @@ class SyncManager:
         Returns:
             List of file paths to sync
         """
-        all_files = self.runpod_client.list_files(self.output_dir)
+        if not self.running_on_runpod:
+            logger.error("Not running on RunPod, cannot get files to sync")
+            return []
         
-        # Filter out files that have already been synced or are not valid
+        # Use glob to find all files in the output directory
+        all_files = []
+        for ext in self.file_extensions:
+            pattern = os.path.join(self.output_dir, f"*{ext}")
+            all_files.extend(glob.glob(pattern))
+        
+        # Filter out files that have already been synced
         files_to_sync = []
         for file_path in all_files:
             file_name = os.path.basename(file_path)
             if (
-                self._is_valid_file(file_path) and 
                 file_path not in self.synced_files and
                 not self.drive_client.file_exists(file_name)
             ):
@@ -62,48 +76,24 @@ class SyncManager:
         
         return files_to_sync
     
-    def _download_and_upload_file(self, remote_path: str) -> bool:
+    def _upload_file(self, file_path: str) -> bool:
         """
-        Download a file from RunPod and upload it to Google Drive.
+        Upload a file to Google Drive.
         
         Args:
-            remote_path: Path to the file on RunPod
+            file_path: Path to the file to upload
             
         Returns:
             True if successful, False otherwise
         """
-        file_name = os.path.basename(remote_path)
-        local_path = os.path.join(self.temp_dir, file_name)
+        file_name = os.path.basename(file_path)
         
         try:
-            # In a real implementation, you would download the file from RunPod
-            # For now, we'll use the RunPod API to get the file content
-            command = f"cat {remote_path} | base64"
-            result = self.runpod_client.execute_command(command)
-            
-            if result.get("status") != "success":
-                logger.error(f"Failed to download {remote_path}: {result.get('error', 'Unknown error')}")
-                return False
-            
-            # Decode the base64 content and write to a local file
-            import base64
-            content = result.get("output", "").strip()
-            
-            try:
-                with open(local_path, "wb") as f:
-                    f.write(base64.b64decode(content))
-            except Exception as e:
-                logger.error(f"Failed to write file {local_path}: {str(e)}")
-                return False
-            
             # Upload the file to Google Drive
-            self.drive_client.upload_file(local_path)
+            self.drive_client.upload_file(file_path)
             
             # Add the file to the synced files set
-            self.synced_files.add(remote_path)
-            
-            # Remove the local file
-            os.remove(local_path)
+            self.synced_files.add(file_path)
             
             logger.info(f"Successfully synced {file_name} to Google Drive")
             return True
@@ -120,12 +110,16 @@ class SyncManager:
         """
         logger.info("Starting file sync")
         
+        if not self.running_on_runpod:
+            logger.error("Not running on RunPod, cannot sync files")
+            return 0
+        
         files_to_sync = self._get_files_to_sync()
         logger.info(f"Found {len(files_to_sync)} files to sync")
         
         synced_count = 0
         for file_path in files_to_sync:
-            if self._download_and_upload_file(file_path):
+            if self._upload_file(file_path):
                 synced_count += 1
         
         logger.info(f"Synced {synced_count} files")
@@ -134,6 +128,10 @@ class SyncManager:
     def run(self):
         """Run the sync manager continuously."""
         logger.info("Starting sync manager")
+        
+        if not self.running_on_runpod:
+            logger.error("Not running on RunPod, exiting")
+            return
         
         try:
             while True:
@@ -147,14 +145,10 @@ class SyncManager:
         except KeyboardInterrupt:
             logger.info("Sync manager stopped by user")
         finally:
-            # Clean up the temporary directory
-            import shutil
-            shutil.rmtree(self.temp_dir, ignore_errors=True)
-            logger.info(f"Removed temporary directory: {self.temp_dir}")
+            self.cleanup()
     
     def cleanup(self):
         """Clean up resources."""
         # Clean up the temporary directory
-        import shutil
         shutil.rmtree(self.temp_dir, ignore_errors=True)
         logger.info(f"Removed temporary directory: {self.temp_dir}") 
