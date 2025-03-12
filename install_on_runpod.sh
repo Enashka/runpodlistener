@@ -1,5 +1,6 @@
 #!/bin/bash
 # Installation script for RunPod ComfyUI Image Sync
+# Updated version for GitHub raw content
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
