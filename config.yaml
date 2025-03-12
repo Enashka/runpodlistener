@@ -1,0 +1,13 @@
+# ComfyUI Image Sync Configuration
+
+# Sync interval in seconds
+sync_interval: 5
+
+# ComfyUI output directory
+output_directory: "/workspace/ComfyUI/output"
+
+# File extensions to sync
+file_extensions:
+  - ".png"
+  - ".jpg"
+  - ".jpeg" 

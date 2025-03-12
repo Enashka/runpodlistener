@@ -5,6 +5,7 @@ import sys
 import time
 import glob
 import logging
+import yaml
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
@@ -19,8 +20,41 @@ logger = logging.getLogger()
 # Constants
 CREDENTIALS_FILE = os.path.join(os.getcwd(), "credentials.json")
 TOKEN_FILE = os.path.join(os.getcwd(), "token.json")
-COMFYUI_OUTPUT_DIR = "/workspace/ComfyUI/output"
-FILE_EXTENSIONS = [".png", ".jpg", ".jpeg"]
+CONFIG_FILE = os.path.join(os.getcwd(), "config.yaml")
+
+# Load configuration
+def load_config():
+    """Load configuration from config.yaml file."""
+    default_config = {
+        "sync_interval": 60,
+        "output_directory": "/workspace/ComfyUI/output",
+        "file_extensions": [".png", ".jpg", ".jpeg"]
+    }
+    
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                config = yaml.safe_load(f)
+                logger.info(f"Loaded configuration from {CONFIG_FILE}")
+                
+                # Merge with default config to ensure all required values exist
+                if config is None:
+                    config = {}
+                    
+                for key, value in default_config.items():
+                    if key not in config:
+                        config[key] = value
+                        
+                return config
+        else:
+            logger.warning(f"Config file {CONFIG_FILE} not found, using default configuration")
+            return default_config
+    except Exception as e:
+        logger.error(f"Error loading configuration: {e}")
+        return default_config
+
+# Global config
+CONFIG = load_config()
 
 def authenticate(folder_id):
     """Authenticate with Google Drive and return a Drive instance."""
@@ -68,17 +102,20 @@ def authenticate(folder_id):
 def sync_files(drive, folder_id):
     """Sync files from ComfyUI output directory to Google Drive."""
     try:
+        output_dir = CONFIG["output_directory"]
+        file_extensions = CONFIG["file_extensions"]
+        
         # Check if output directory exists
-        if not os.path.exists(COMFYUI_OUTPUT_DIR):
-            logger.error(f"Output directory {COMFYUI_OUTPUT_DIR} does not exist")
+        if not os.path.exists(output_dir):
+            logger.error(f"Output directory {output_dir} does not exist")
             return 0
         
-        logger.info(f"Checking for files in {COMFYUI_OUTPUT_DIR}")
+        logger.info(f"Checking for files in {output_dir}")
         
         # Find all files with the specified extensions
         all_files = []
-        for ext in FILE_EXTENSIONS:
-            pattern = os.path.join(COMFYUI_OUTPUT_DIR, f"*{ext}")
+        for ext in file_extensions:
+            pattern = os.path.join(output_dir, f"*{ext}")
             all_files.extend(glob.glob(pattern))
         
         logger.info(f"Found {len(all_files)} files with supported extensions")
@@ -128,6 +165,10 @@ def main():
     folder_id = sys.argv[1]
     run_once = "--once" in sys.argv
     
+    # Get sync interval from config
+    sync_interval = CONFIG["sync_interval"]
+    logger.info(f"Using sync interval of {sync_interval} seconds")
+    
     logger.info(f"Starting sync with folder ID: {folder_id}")
     
     try:
@@ -145,8 +186,8 @@ def main():
                 except Exception as e:
                     logger.error(f"Error during sync: {e}")
                 
-                logger.info("Sleeping for 60 seconds")
-                time.sleep(60)
+                logger.info(f"Sleeping for {sync_interval} seconds")
+                time.sleep(sync_interval)
     except Exception as e:
         logger.error(f"Error: {e}")
         return 1
