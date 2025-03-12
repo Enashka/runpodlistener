@@ -7,6 +7,10 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# Define persistent storage location
+PERSISTENT_DIR="/workspace"
+INSTALL_DIR="$PERSISTENT_DIR/runpodlistener"
+
 # Prompt for Google Drive folder ID
 read -p "Enter your Google Drive folder ID: " GOOGLE_DRIVE_FOLDER_ID
 if [ -z "$GOOGLE_DRIVE_FOLDER_ID" ]; then
@@ -15,7 +19,6 @@ if [ -z "$GOOGLE_DRIVE_FOLDER_ID" ]; then
 fi
 
 # Create installation directory
-INSTALL_DIR="/workspace/runpodlistener"
 mkdir -p $INSTALL_DIR
 cd $INSTALL_DIR
 
@@ -24,7 +27,7 @@ echo "Cloning the repository..."
 if [ -d ".git" ]; then
   git pull
 else
-  git clone https://github.com/yourusername/runpodlistener.git .
+  git clone https://github.com/Enashka/runpodlistener.git .
 fi
 
 # Create .env file
@@ -41,22 +44,29 @@ source venv/bin/activate
 echo "Installing dependencies..."
 pip install -r requirements.txt
 
-# Prompt for credentials.json
-echo ""
-echo "You need to provide a credentials.json file for Google Drive API."
-echo "Please follow these steps:"
-echo "1. Go to https://console.cloud.google.com/"
-echo "2. Create a new project"
-echo "3. Enable the Google Drive API"
-echo "4. Create OAuth credentials (Desktop app)"
-echo "5. Download the credentials JSON file"
-echo "6. Upload it to your RunPod instance as credentials.json"
-echo ""
-read -p "Press Enter when you have uploaded credentials.json to $INSTALL_DIR..."
+# Check for credentials in persistent storage
+CREDS_FILE="$INSTALL_DIR/credentials.json"
+TOKEN_FILE="$INSTALL_DIR/token.json"
 
-if [ ! -f "credentials.json" ]; then
-  echo "credentials.json not found. Please upload it and try again."
-  exit 1
+if [ ! -f "$CREDS_FILE" ]; then
+  echo ""
+  echo "You need to provide a credentials.json file for Google Drive API."
+  echo "Please follow these steps:"
+  echo "1. Go to https://console.cloud.google.com/"
+  echo "2. Create a new project"
+  echo "3. Enable the Google Drive API"
+  echo "4. Create OAuth credentials (Desktop app)"
+  echo "5. Download the credentials JSON file"
+  echo "6. Upload it to your RunPod instance as credentials.json"
+  echo ""
+  read -p "Press Enter when you have uploaded credentials.json to $INSTALL_DIR..."
+
+  if [ ! -f "$CREDS_FILE" ]; then
+    echo "credentials.json not found. Please upload it and try again."
+    exit 1
+  fi
+else
+  echo "Found existing credentials.json file."
 fi
 
 # Create a systemd service file for auto-start
@@ -88,6 +98,15 @@ echo "The sync service is now running in the background."
 echo "You can check its status with: systemctl status runpod-sync"
 echo "View logs with: journalctl -u runpod-sync"
 echo ""
-echo "Note: The first time you run the service, you'll need to authenticate with Google."
-echo "Run the following command to authenticate:"
-echo "  cd $INSTALL_DIR && source venv/bin/activate && python src/main.py --once" 
+
+# Check if token file exists
+if [ ! -f "$TOKEN_FILE" ]; then
+  echo "Note: You need to authenticate with Google Drive the first time."
+  echo "Run the following command to authenticate:"
+  echo "  cd $INSTALL_DIR && source venv/bin/activate && python src/main.py --once"
+  echo ""
+  echo "After authentication, the token will be saved to your persistent storage"
+  echo "and will be available for future RunPod sessions."
+else
+  echo "Found existing token.json file. Authentication should be automatic."
+fi 

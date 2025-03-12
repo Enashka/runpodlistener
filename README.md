@@ -83,7 +83,7 @@ If you want to automatically start the sync tool whenever you create a new RunPo
 ```bash
 # Clone and set up the sync tool
 cd /workspace
-git clone https://github.com/yourusername/runpodlistener.git
+git clone https://github.com/Enashka/runpodlistener.git
 cd runpodlistener
 
 # Configure
@@ -100,6 +100,37 @@ nohup python src/main.py > sync.log 2>&1 &
 ```
 
 Replace `YOUR_FOLDER_ID` with your actual Google Drive folder ID.
+
+## Credential Security
+
+This tool requires access to your Google Drive, which means it needs credentials to authenticate. Here's how to keep your credentials secure:
+
+### Keeping Credentials Safe
+
+1. **Never commit credentials to GitHub**
+   - The `.gitignore` file already excludes sensitive files like `credentials.json` and `token.json`
+   - Always upload these files directly to your RunPod instance, not to GitHub
+
+2. **Use RunPod's persistent storage**
+   - Store your credentials in RunPod's persistent storage area
+   - This way, they persist between pod sessions but aren't in your GitHub repo
+   - The default location is `/workspace/runpodlistener/`
+
+3. **First-time setup only**
+   - You only need to set up credentials once if using persistent storage
+   - The token will be automatically refreshed when needed
+
+### Credential Files
+
+- **credentials.json**: Your Google API client credentials
+  - Download from Google Cloud Console
+  - Upload directly to your RunPod instance
+  - Store in `/workspace/runpodlistener/`
+
+- **token.json**: Your OAuth access token
+  - Generated after first authentication
+  - Automatically stored in `/workspace/runpodlistener/`
+  - Persists between pod sessions if in persistent storage
 
 ## First Run Authentication
 
