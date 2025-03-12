@@ -1,4 +1,5 @@
 # ComfyUI Image Sync Configuration
+# Updated by Enashka
 
 # Sync interval in seconds
 sync_interval: 5

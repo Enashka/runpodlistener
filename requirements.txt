@@ -1,3 +1,4 @@
+# Required dependencies for ComfyUI Image Sync Tool
 pydrive2
 python-dotenv
 pyyaml

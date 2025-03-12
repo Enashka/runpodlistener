@@ -1,4 +1,6 @@
 #!/bin/bash
+# Start script for ComfyUI Image Sync Tool
+# Updated by Enashka
 
 # Change to the script directory
 cd "$(dirname "$0")"

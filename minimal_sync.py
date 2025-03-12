@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# Updated version with config.yaml support
+# Author: Enashka
+
 import os
 import sys
 import time

@@ -1,3 +1,6 @@
+# Git ignore file for ComfyUI Image Sync Tool
+# Updated by Enashka
+
 # Python
 __pycache__/
 *.py[cod]
