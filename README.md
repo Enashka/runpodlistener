@@ -37,6 +37,8 @@ For a simplified setup process, you can use our setup script:
    - Upload your credentials.json file when prompted
    - Complete the Google authentication process
 
+   > **Important**: When downloading credentials from Google Cloud Console, the file might be named something like "client_secret_XXXX.json". Make sure to rename it to exactly "credentials.json" before uploading.
+
 The script will automatically:
 - Create the necessary directory
 - Download all required files
@@ -74,6 +76,8 @@ If you prefer to install manually, follow these steps:
    ```
 
 6. Upload your credentials.json file to this directory (you can use the RunPod file browser)
+
+   > **Important**: When downloading credentials from Google Cloud Console, the file might be named something like "client_secret_XXXX.json". Make sure to rename it to exactly "credentials.json" before uploading.
 
 7. Edit the config.yaml file to set your Google Drive folder ID:
    ```bash
@@ -154,7 +158,7 @@ pkill -f minimal_sync.py
 2. Create a new project or select an existing one
 3. Enable the Google Drive API
 4. Create OAuth 2.0 credentials (Desktop application)
-5. Download the credentials.json file
+5. Download the credentials.json file (if the downloaded file has a different name like "client_secret_XXXX.json", rename it to "credentials.json")
 
 ## License
 
