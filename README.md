@@ -23,7 +23,15 @@ This application monitors the output directory of ComfyUI on RunPod and automati
 
 ## Installation on RunPod
 
-### Option 1: Quick Installation (Recommended)
+### Option 1: One-Line Installation (Easiest)
+
+Run this single command on your RunPod instance:
+
+```bash
+wget -O - https://raw.githubusercontent.com/Enashka/runpodlistener/main/direct_install.sh | bash
+```
+
+### Option 2: Manual Download and Install
 
 1. SSH into your RunPod instance
 2. Download the installation script:
@@ -40,7 +48,7 @@ This application monitors the output directory of ComfyUI on RunPod and automati
    ```
 5. Follow the prompts to complete the installation
 
-### Option 2: Manual Installation
+### Option 3: Full Manual Installation
 
 1. SSH into your RunPod instance
 2. Clone this repository:
