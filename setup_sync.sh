@@ -6,20 +6,33 @@
 mkdir -p /workspace/runpodlistener
 cd /workspace/runpodlistener
 
-# Check if files already exist (since /workspace is persistent)
-FILES_EXIST=true
-if [ ! -f "minimal_sync.py" ] || [ ! -f "config.yaml" ] || [ ! -f "start.sh" ]; then
-    FILES_EXIST=false
+# Check each file individually and only download if it doesn't exist
+echo "Checking for necessary files..."
+
+# Check for minimal_sync.py
+if [ ! -f "minimal_sync.py" ]; then
+    echo "Downloading minimal_sync.py..."
+    curl -O https://raw.githubusercontent.com/Enashka/runpodlistener/main/minimal_sync.py
+    chmod +x minimal_sync.py
+else
+    echo "minimal_sync.py already exists in persistent storage."
 fi
 
-if [ "$FILES_EXIST" = false ]; then
-    echo "Downloading necessary files..."
-    curl -O https://raw.githubusercontent.com/Enashka/runpodlistener/main/minimal_sync.py
+# Check for config.yaml but ONLY download if it doesn't exist
+if [ ! -f "config.yaml" ]; then
+    echo "Downloading config.yaml..."
     curl -O https://raw.githubusercontent.com/Enashka/runpodlistener/main/config.yaml
-    curl -O https://raw.githubusercontent.com/Enashka/runpodlistener/main/start.sh
-    chmod +x minimal_sync.py start.sh
 else
-    echo "Files already exist in persistent storage. Skipping download."
+    echo "config.yaml already exists in persistent storage. Preserving your configuration."
+fi
+
+# Check for start.sh
+if [ ! -f "start.sh" ]; then
+    echo "Downloading start.sh..."
+    curl -O https://raw.githubusercontent.com/Enashka/runpodlistener/main/start.sh
+    chmod +x start.sh
+else
+    echo "start.sh already exists in persistent storage."
 fi
 
 # Install dependencies
