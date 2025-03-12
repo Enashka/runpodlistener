@@ -28,7 +28,7 @@ This application monitors the output directory of ComfyUI on RunPod and automati
 1. SSH into your RunPod instance
 2. Download the installation script:
    ```bash
-   wget https://raw.githubusercontent.com/yourusername/runpodlistener/master/install_on_runpod.sh
+   wget https://raw.githubusercontent.com/Enashka/runpodlistener/main/install_on_runpod.sh
    ```
 3. Make it executable:
    ```bash
@@ -46,7 +46,7 @@ This application monitors the output directory of ComfyUI on RunPod and automati
 2. Clone this repository:
    ```bash
    cd /workspace
-   git clone https://github.com/yourusername/runpodlistener.git
+   git clone https://github.com/Enashka/runpodlistener.git
    cd runpodlistener
    ```
 3. Set up Google Drive API:
