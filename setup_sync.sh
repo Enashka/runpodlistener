@@ -92,9 +92,14 @@ else
     fi
 fi
 
-# Start the sync service
-echo "Starting sync service..."
-./start.sh
+# Check if the sync service is already running
+if pgrep -f "python.*minimal_sync.py" > /dev/null; then
+    echo "The sync service is already running."
+    echo "To restart it, first stop the existing service with: pkill -f minimal_sync.py"
+    echo "Then start a new instance with: ./start.sh"
+else
+    echo "Setup complete! To start the sync service, run:"
+    echo "./start.sh"
+fi
 
-echo "Setup complete! The sync service is now running in the background."
 echo "You can check the logs with: tail -f sync.log" 
