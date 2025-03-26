@@ -164,6 +164,20 @@ This ensures:
 
 3. **Missing files**: Ensure the output directory exists and is correct in `config.yaml`
 
+4. **Authentication issues**: If you encounter problems with authentication:
+   - Make sure your `credentials.json` file is correct and properly formatted
+   - During the authentication process, you'll be given a URL to visit
+   - Go to that URL in a browser, authorize the application, and copy the provided code
+   - Paste the code back into the terminal when prompted
+   - This will create a `token.json` file that stores your access tokens
+
+5. **Missing token.json**: If the tool cannot find your authentication token:
+   ```bash
+   cd /workspace/runpodlistener
+   python minimal_sync.py --once
+   ```
+   Then follow the authentication prompts to recreate the token.
+
 ### Getting Help
 
 If you encounter issues:

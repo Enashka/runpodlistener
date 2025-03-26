@@ -10,8 +10,11 @@ import glob
 import logging
 import yaml
 import datetime
+import json
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
+from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.file import Storage
 
 # Configure logging
 logging.basicConfig(
@@ -71,20 +74,52 @@ def authenticate(folder_id):
         
         # Create GoogleAuth instance
         gauth = GoogleAuth()
+        logger.info("Created GoogleAuth instance")
         
         # Configure settings
+        logger.info("Configuring settings...")
+        gauth.settings['client_config_backend'] = 'file'
         gauth.settings['client_config_file'] = CREDENTIALS_FILE
         gauth.settings['save_credentials'] = True
         gauth.settings['save_credentials_backend'] = 'file'
         gauth.settings['save_credentials_file'] = TOKEN_FILE
         gauth.settings['oauth_scope'] = ['https://www.googleapis.com/auth/drive']
+        logger.info("Settings configured")
         
         # Load credentials
+        logger.info("Loading credentials file...")
         gauth.LoadCredentialsFile(TOKEN_FILE)
+        logger.info("Credentials file loaded")
         
         if gauth.credentials is None:
             logger.info("No credentials found. Starting authentication process...")
-            gauth.CommandLineAuth()
+            try:
+                # Directly create flow and credentials instead of using CommandLineAuth
+                logger.info("Reading client config from credentials file...")
+                with open(CREDENTIALS_FILE, 'r') as f:
+                    client_config = json.loads(f.read())['installed']
+                
+                logger.info("Creating OAuth2WebServerFlow...")
+                flow = OAuth2WebServerFlow(
+                    client_id=client_config['client_id'],
+                    client_secret=client_config['client_secret'],
+                    scope='https://www.googleapis.com/auth/drive',
+                    redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+                
+                auth_url = flow.step1_get_authorize_url()
+                logger.info(f"Please go to this URL and authorize the app: {auth_url}")
+                logger.info("After authorization, copy the code and enter it here:")
+                auth_code = input("Enter the authorization code: ")
+                
+                logger.info("Getting credentials from auth code...")
+                credentials = flow.step2_exchange(auth_code)
+                
+                # Set the credentials in GoogleAuth
+                gauth.credentials = credentials
+                logger.info("Credentials obtained successfully")
+            except Exception as e:
+                logger.error(f"Error during authentication: {e}")
+                raise
         elif gauth.access_token_expired:
             logger.info("Credentials expired. Refreshing...")
             gauth.Refresh()
@@ -93,7 +128,9 @@ def authenticate(folder_id):
             gauth.Authorize()
         
         # Save credentials
+        logger.info("Saving credentials...")
         gauth.SaveCredentialsFile(TOKEN_FILE)
+        logger.info("Credentials saved successfully")
         
         # Create Drive instance
         drive = GoogleDrive(gauth)
